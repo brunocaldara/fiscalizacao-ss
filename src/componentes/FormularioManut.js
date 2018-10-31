@@ -50,6 +50,7 @@ class FormularioManut extends Component {
         this.desabilitarInput = this.desabilitarInput.bind(this);
         this.desabilitarMedicao = this.desabilitarMedicao.bind(this);
         this.desabilitarConformidade = this.desabilitarConformidade.bind(this);
+        this.desabilitarExcluir = this.desabilitarExcluir.bind(this);
         this.validarForm = this.validarForm.bind(this);
         this.onFormSubmit = this.onFormSubmit.bind(this);
         this.pesquisar = this.pesquisar.bind(this);
@@ -116,6 +117,10 @@ class FormularioManut extends Component {
 
     desabilitarMedicao() {
         return this.state.contrato === '0' || this.state.medicoes.length === 0;
+    }
+
+    desabilitarExcluir() {
+        return this.state.medicaoSit === '1' || this.state.id === '0';
     }
 
     validarForm() {
@@ -265,7 +270,7 @@ class FormularioManut extends Component {
                 'conformidade': this.state.conformidade
             }
 
-            const rawResponse = await fetch(process.env.REACT_APP_API_FISCALIZACAO, {
+            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_SALVAR, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -308,7 +313,56 @@ class FormularioManut extends Component {
     }
 
     async pesquisar() {
-        //Teste doido
+        try {
+            const objFisc = {
+                'idMedicao': this.state.medicao,
+                'idTpFiscalizacao': this.state.tipoFisc,
+                'sS': this.state.numSS
+            }
+
+            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_PESQUISAR, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(objFisc)
+            });
+
+            const { id, erro, dtExecucao, conformidade, descricao, ativoExcluido } = await rawResponse.json();
+
+            if (erro || ativoExcluido === 'E') {
+                let mensagens = [];
+
+                let mensagemEstilo = 'danger';
+
+                mensagens.push(ativoExcluido === 'E' ? 'Registro excluido!' : erro);
+
+                this.setState({
+                    mensagens,
+                    mensagemEstilo
+                }, () => {
+                    setTimeout(() => {
+                        this.setState({
+                            mensagens: [],
+                            mensagemEstilo: 'danger',
+                            id: '0'
+                        });
+                    }, 5000);
+                });
+            }
+
+            if (id) {
+                this.setState({
+                    id,
+                    dataHora: dtExecucao,
+                    conformidade,
+                    descricao
+                });
+            }
+        } catch (erro) {
+            throw erro;
+        }
     }
 
     componentDidMount() {
@@ -446,7 +500,7 @@ class FormularioManut extends Component {
                                 </Button>
                                 <Button bsStyle="danger"
                                     style={{ width: 100 }}
-                                    disabled={this.desabilitarInput()}
+                                    disabled={this.desabilitarExcluir()}
                                     onClick={() => { }}>
                                     <Glyphicon glyph="remove" /> Excluir
                                 </Button>
