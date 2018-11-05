@@ -54,6 +54,7 @@ class FormularioManut extends Component {
         this.validarForm = this.validarForm.bind(this);
         this.onFormSubmit = this.onFormSubmit.bind(this);
         this.pesquisar = this.pesquisar.bind(this);
+        this.excluir = this.excluir.bind(this);
     }
 
     limparInput() {
@@ -282,17 +283,17 @@ class FormularioManut extends Component {
             const { sucesso, erro, alerta } = await rawResponse.json();
 
             if (sucesso) {
-                mensagens.push(sucesso);
-
                 mensagemEstilo = 'success';
+
+                mensagens.push(sucesso);
             } else if (erro) {
-                mensagens.push(erro);
-
                 mensagemEstilo = 'danger';
-            } else if (alerta) {
-                mensagens.push(alerta);
 
+                mensagens.push(erro);
+            } else if (alerta) {
                 mensagemEstilo = 'warning';
+
+                mensagens.push(alerta);
             }
 
             this.setState({
@@ -360,6 +361,60 @@ class FormularioManut extends Component {
                     descricao
                 });
             }
+        } catch (erro) {
+            throw erro;
+        }
+    }
+
+    async excluir() {
+        try {
+            const objFisc = {
+                'idFiscalizacoesSs': this.state.id
+            }
+
+            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_EXCLUIR, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(objFisc)
+            });
+
+            const { sucesso, erro, alerta } = await rawResponse.json();
+
+            let mensagens = [];
+
+            let mensagemEstilo = '';
+
+            if (sucesso) {
+                mensagemEstilo = 'success';
+
+                mensagens.push(sucesso);
+            } else if (erro) {
+                mensagemEstilo = 'danger';
+
+                mensagens.push(erro);
+            } else if (alerta) {
+                mensagemEstilo = 'warning';
+
+                mensagens.push(alerta);
+            }
+
+            this.setState({
+                mensagens,
+                mensagemEstilo
+            }, () => {
+                setTimeout(() => {
+                    this.setState({
+                        mensagens: [],
+                        mensagemEstilo: 'danger',
+                        id: '0'
+                    }, () => {
+                        if (sucesso) this.limparInput();
+                    });
+                }, 5000);
+            });
         } catch (erro) {
             throw erro;
         }
@@ -501,7 +556,7 @@ class FormularioManut extends Component {
                                 <Button bsStyle="danger"
                                     style={{ width: 100 }}
                                     disabled={this.desabilitarExcluir()}
-                                    onClick={() => { }}>
+                                    onClick={() => { if (window.confirm('Deseja excluir a fiscalização?')) this.excluir() }}>
                                     <Glyphicon glyph="remove" /> Excluir
                                 </Button>
                                 <Button bsStyle="success"
