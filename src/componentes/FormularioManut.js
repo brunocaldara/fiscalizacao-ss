@@ -5,6 +5,7 @@ import MaskedInput from 'react-text-mask';
 import moment from 'moment-timezone';
 import Mensagem from './Mensagem';
 import SelectCustomizado from './SelectCustomizado';
+import ApiService from './ApiService';
 
 //Alteração somente se a medião estiver aberta = 0
 
@@ -12,10 +13,7 @@ class FormularioManut extends Component {
     constructor(props) {
         super(props);
 
-        this.conformidades = [
-            { id: '1', desc: 'Conforme' },
-            { id: '2', desc: 'Não Conforme' },
-        ];
+        console.log(props.match.params.id || '0');
 
         this.state = {
             id: '0',
@@ -44,16 +42,14 @@ class FormularioManut extends Component {
         }
 
         this.onInputChange = this.onInputChange.bind(this);
-        this.getContratos = this.getContratos.bind(this);
-        this.getMedicoes = this.getMedicoes.bind(this);
-        this.getTiposFisc = this.getTiposFisc.bind(this);
         this.desabilitarInput = this.desabilitarInput.bind(this);
         this.desabilitarMedicao = this.desabilitarMedicao.bind(this);
         this.desabilitarConformidade = this.desabilitarConformidade.bind(this);
         this.desabilitarExcluir = this.desabilitarExcluir.bind(this);
         this.validarForm = this.validarForm.bind(this);
-        this.onFormSubmit = this.onFormSubmit.bind(this);
+        this.salvar = this.salvar.bind(this);
         this.pesquisar = this.pesquisar.bind(this);
+        this.pesquisarPorId = this.pesquisarPorId.bind(this);
         this.excluir = this.excluir.bind(this);
     }
 
@@ -83,29 +79,6 @@ class FormularioManut extends Component {
             //tiposFisc: [],
             mensagens: []
         });
-    }
-
-    getContratos() {
-        fetch(process.env.REACT_APP_API_CONTRATO)
-            .then(resposta => resposta.json())
-            .then(dados => this.setState({ contratos: dados }))
-            .catch(erro => console.log(erro));
-    }
-
-    getMedicoes(resposta) {
-        if (resposta) {
-            fetch(process.env.REACT_APP_API_MEDICAO.replace('XXX', resposta))
-                .then(resposta => resposta.json())
-                .then(dados => this.setState({ medicoes: dados }))
-                .catch(erro => console.log(erro));
-        }
-    }
-
-    getTiposFisc() {
-        fetch(process.env.REACT_APP_API_TIPOFISC)
-            .then(resposta => resposta.json())
-            .then(dados => this.setState({ tiposFisc: dados }))
-            .catch(erro => console.log(erro));
     }
 
     desabilitarConformidade() {
@@ -254,7 +227,7 @@ class FormularioManut extends Component {
         }
     }
 
-    async onFormSubmit() {
+    async salvar() {
         try {
             if (!this.validarForm()) return;
 
@@ -318,7 +291,8 @@ class FormularioManut extends Component {
             const objFisc = {
                 'idMedicao': this.state.medicao,
                 'idTpFiscalizacao': this.state.tipoFisc,
-                'sS': this.state.numSS
+                'sS': this.state.numSS,
+                'idFiscalizacoesSs': '0'
             }
 
             const rawResponse = await fetch(process.env.REACT_APP_API_FISC_PESQUISAR, {
@@ -364,6 +338,20 @@ class FormularioManut extends Component {
         } catch (erro) {
             throw erro;
         }
+    }
+
+    async pesquisarPorId() {
+        // const { 
+        //     id, 
+        //     erro, 
+        //     idMedicao, 
+        //     idTpFiscalizacao,
+        //     sS,
+        //     dtExecucao, 
+        //     conformidade, 
+        //     descricao, 
+        //     ativoExcluido 
+        // } =  await ApiService.getFiscalizacao(this.state.id);
     }
 
     async excluir() {
@@ -421,15 +409,15 @@ class FormularioManut extends Component {
     }
 
     componentDidMount() {
-        this.getContratos();
+        ApiService.getContratos().then(dados => this.setState({ contratos: dados }));
 
-        this.getTiposFisc();
+        ApiService.getTiposFisc().then(dados => this.setState({ tiposFisc: dados }));
 
         PubSub.subscribe('contrato-change', (topico, resposta) => {
             //Limpar o select quando escolher um contrato sem medições
             this.setState({ medicao: '0', medicaoSit: '1' });
 
-            this.getMedicoes(resposta);
+            ApiService.getMedicoes(resposta).then(dados => this.setState({ medicoes: dados }));
         });
     }
 
@@ -439,7 +427,7 @@ class FormularioManut extends Component {
             : null;
 
         return (
-            <Grid >
+            <Grid>
                 <h1>Fiscalização de SS</h1>
                 <Form>
                     <Row className="show-grid">
@@ -525,7 +513,7 @@ class FormularioManut extends Component {
                                 label="Conformidade"
                                 placeholder="Conformidade..."
                                 value={this.state.conformidade}
-                                items={this.conformidades}
+                                items={ApiService.getConformidades()}
                                 disabled={this.desabilitarConformidade()}
                                 onChange={this.onInputChange}
                                 validationState={this.state.vsConformidade} />
@@ -550,7 +538,7 @@ class FormularioManut extends Component {
                                 <Button bsStyle="primary"
                                     style={{ width: 100 }}
                                     disabled={this.desabilitarInput()}
-                                    onClick={this.onFormSubmit}>
+                                    onClick={this.salvar}>
                                     <Glyphicon glyph="ok" /> Salvar
                                 </Button>
                                 <Button bsStyle="danger"

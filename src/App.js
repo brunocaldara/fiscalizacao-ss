@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
-import FormularioManut from './componentes/FormularioManut';
+import Menu from './componentes/Menu';
 
 class App extends Component {
   render() {
     return (
       <div>
-        <FormularioManut />
+        <Menu />
       </div>
     );
   }
