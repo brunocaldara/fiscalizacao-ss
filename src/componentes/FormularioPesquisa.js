@@ -157,7 +157,11 @@ class FormularioPesquisa extends Component {
     }
 
     async pesquisar() {
-
+        try {
+            
+        } catch (erro) {
+            throw erro;
+        }
     }
 
     limparInput() {

@@ -8,12 +8,12 @@ export default class ApiService {
         return conformidades;
     }
 
-    static async getFiscalizacao(idFisc) {
+    static async getFiscalizacao(idFisc, idMedicao, idTpFiscalizacao, ss) {
         try {
             const objFisc = {
-                'idMedicao': '0',
-                'idTpFiscalizacao': '0',
-                'sS': '00/00-000000-00',
+                'idMedicao': idMedicao,
+                'idTpFiscalizacao': idTpFiscalizacao,
+                'sS': ss,
                 'idFiscalizacoesSs': idFisc
             }
 

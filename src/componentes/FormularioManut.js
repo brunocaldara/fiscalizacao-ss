@@ -26,6 +26,7 @@ class FormularioManut extends Component {
             conformidade: '0',
             descricao: '',
             mensagemEstilo: 'danger',
+            ativoExcluido: 'A',
 
             vsContrato: null,
             vsMedicao: null,
@@ -49,7 +50,6 @@ class FormularioManut extends Component {
         this.validarForm = this.validarForm.bind(this);
         this.salvar = this.salvar.bind(this);
         this.pesquisar = this.pesquisar.bind(this);
-        this.pesquisarPorId = this.pesquisarPorId.bind(this);
         this.excluir = this.excluir.bind(this);
     }
 
@@ -65,6 +65,7 @@ class FormularioManut extends Component {
             conformidade: '0',
             descricao: '',
             mensagemEstilo: 'danger',
+            ativoExcluido: 'A',
 
             vsContrato: null,
             vsMedicao: null,
@@ -304,7 +305,26 @@ class FormularioManut extends Component {
                 body: JSON.stringify(objFisc)
             });
 
-            const { id, erro, dtExecucao, conformidade, descricao, ativoExcluido } = await rawResponse.json();
+            const { 
+                id,
+                erro,
+                dtExecucao,
+                conformidade,
+                descricao,
+                ativoExcluido
+            } = await rawResponse.json();
+
+            // const { 
+            //     id, 
+            //     erro, 
+            //     idMedicao, 
+            //     idTpFiscalizacao,
+            //     sS,
+            //     dtExecucao, 
+            //     conformidade, 
+            //     descricao, 
+            //     ativoExcluido 
+            // } =  await ApiService.getFiscalizacao(this.state.id);
 
             if (erro || ativoExcluido === 'E') {
                 let mensagens = [];
@@ -338,20 +358,6 @@ class FormularioManut extends Component {
         } catch (erro) {
             throw erro;
         }
-    }
-
-    async pesquisarPorId() {
-        // const { 
-        //     id, 
-        //     erro, 
-        //     idMedicao, 
-        //     idTpFiscalizacao,
-        //     sS,
-        //     dtExecucao, 
-        //     conformidade, 
-        //     descricao, 
-        //     ativoExcluido 
-        // } =  await ApiService.getFiscalizacao(this.state.id);
     }
 
     async excluir() {
