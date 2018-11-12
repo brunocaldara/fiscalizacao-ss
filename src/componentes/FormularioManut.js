@@ -16,14 +16,14 @@ class FormularioManut extends Component {
         console.log(props.match.params.id || '0');
 
         this.state = {
-            id: '0',
-            contrato: '0',
-            medicao: '0',
+            id: '',
+            contrato: '',
+            medicao: '',
             medicaoSit: '1',
-            tipoFisc: '0',
+            tipoFisc: '',
             numSS: '',
             dataHora: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm'),
-            conformidade: '0',
+            conformidade: '',
             descricao: '',
             mensagemEstilo: 'danger',
             ativoExcluido: 'A',
@@ -55,14 +55,14 @@ class FormularioManut extends Component {
 
     limparInput() {
         this.setState({
-            id: '0',
-            contrato: '0',
-            medicao: '0',
+            id: '',
+            contrato: '',
+            medicao: '',
             medicaoSit: '1',
-            tipoFisc: '0',
+            tipoFisc: '',
             numSS: '',
             dataHora: '',
-            conformidade: '0',
+            conformidade: '',
             descricao: '',
             mensagemEstilo: 'danger',
             ativoExcluido: 'A',
@@ -293,38 +293,17 @@ class FormularioManut extends Component {
                 'idMedicao': this.state.medicao,
                 'idTpFiscalizacao': this.state.tipoFisc,
                 'sS': this.state.numSS,
-                'idFiscalizacoesSs': '0'
+                'idFiscalizacoesSs': null
             }
 
-            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_PESQUISAR, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(objFisc)
-            });
-
             const { 
-                id,
-                erro,
-                dtExecucao,
-                conformidade,
-                descricao,
-                ativoExcluido
-            } = await rawResponse.json();
-
-            // const { 
-            //     id, 
-            //     erro, 
-            //     idMedicao, 
-            //     idTpFiscalizacao,
-            //     sS,
-            //     dtExecucao, 
-            //     conformidade, 
-            //     descricao, 
-            //     ativoExcluido 
-            // } =  await ApiService.getFiscalizacao(this.state.id);
+                id, 
+                erro, 
+                dtExecucao, 
+                conformidade, 
+                descricao, 
+                ativoExcluido 
+            } =  await ApiService.getFiscalizacao(objFisc);
 
             if (erro || ativoExcluido === 'E') {
                 let mensagens = [];

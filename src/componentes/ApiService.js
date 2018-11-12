@@ -8,16 +8,26 @@ export default class ApiService {
         return conformidades;
     }
 
-    static async getFiscalizacao(idFisc, idMedicao, idTpFiscalizacao, ss) {
+    static async getFiscalizacao(objFisc) {
         try {
-            const objFisc = {
-                'idMedicao': idMedicao,
-                'idTpFiscalizacao': idTpFiscalizacao,
-                'sS': ss,
-                'idFiscalizacoesSs': idFisc
-            }
-
             const rawResponse = await fetch(process.env.REACT_APP_API_FISC_PESQUISAR, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(objFisc)
+            });
+
+            return await rawResponse.json();
+        } catch(erro) {
+            throw erro;
+        }
+    }
+
+    static async getFiscalizacoes(objFisc) {
+        try {
+            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_PESQUISAR_TODAS, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

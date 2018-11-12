@@ -7,23 +7,24 @@ import Mensagem from './Mensagem';
 import SelectCustomizado from './SelectCustomizado';
 import ApiService from './ApiService';
 import ReactTable from "react-table";
+import 'react-table/react-table.css'
 
 class FormularioPesquisa extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            id: '1', //?????????????????
-            contrato: '0',
-            medicao: '0',
+            id: '',
+            contrato: '',
+            medicao: '',
             medicaoSit: '1',
-            tipoFisc: '0',
+            tipoFisc: '',
             numSS: '',
-            dataInicio: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm'),
-            dataFim: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm'),
-            conformidade: '0',
+            dataInicio: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataFim: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            conformidade: '',
             mensagemEstilo: 'danger',
-            loading: true,
+            loading: false,
 
             vsNumSS: null,
             vsDataInicio: null,
@@ -36,6 +37,19 @@ class FormularioPesquisa extends Component {
             dados: []
         }
 
+        //Usado para pegar os dados filtrados para gerar a exportação
+        this.myReactTable = React.createRef();
+
+        this.previousText = 'Anterior';
+        this.nextText = 'Próximo';
+        this.loadingText = 'Aguarde...';
+        this.noDataText = 'Nenhuma informação';
+        this.pageText = 'Página';
+        this.ofText = 'de';
+        this.rowsText = 'linhas';
+        this.pageJumpText = 'Vá para página';
+        this.rowsSelectorText = 'linhas por página';
+
         this.onInputChange = this.onInputChange.bind(this);
         this.validarForm = this.validarForm.bind(this);
         this.pesquisar = this.pesquisar.bind(this);
@@ -47,43 +61,60 @@ class FormularioPesquisa extends Component {
                 Header: 'Id',
                 accessor: 'id',
                 id: 'id',
-                sortable: true                
+                sortable: true,
+                filterable: true
             },
             {
                 Header: 'Contrato',
                 accessor: 'conrtato',
                 id: 'contrato',
-                sortable: true
-            }, 
+                sortable: true,
+                filterable: true
+            },
             {
                 Header: 'Medição',
                 accessor: 'medicao',
                 id: 'medicao',
-                sortable: true
+                sortable: true,
+                filterable: true
             },
             {
                 Header: 'Tipo Fisc.',
                 accessor: 'tipoFisc',
                 id: 'tipoFisc',
-                sortable: true
+                sortable: true,
+                filterable: true
             },
             {
                 Header: 'SS',
                 accessor: 'ss',
                 id: 'ss',
-                sortable: true
+                sortable: true,
+                filterable: true
             },
             {
                 Header: 'Data Exec',
                 accessor: 'dataExec',
                 id: 'dataExec',
-                sortable: true
+                sortable: true,
+                filterable: true
             },
             {
                 Header: 'Conformidade',
                 accessor: 'conformidade',
                 id: 'conformidade',
-                sortable: true
+                sortable: true,
+                filterable: true
+            },
+            {
+                Header: 'Acão',
+                accessor: 'acao',
+                id: 'acao',
+                sortable: false,
+                filterable: false,
+                Cell: row => (
+                    <div>Ola</div>
+                )
             }
         ]);
     }
@@ -158,24 +189,44 @@ class FormularioPesquisa extends Component {
 
     async pesquisar() {
         try {
-            
+            const objFisc = {
+                "cdContrato": this.state.contrato ? this.state.contrato : null,
+                "idMedicao": this.state.medicao ? this.state.medicao : null,
+                "idTpFiscalizacao": this.state.tipoFisc ? this.state.tipoFisc : null,
+                "sS": this.state.id ? this.state.id : null,
+                "dataInicioExecucao": this.state.dataInicio ? this.state.dataInicio : null,
+                "dataFimExecucao": this.state.dataFim ? this.state.dataFim : null,
+                "conformidade": this.state.conformidade ? this.state.conformidade : null
+            }
+
+            console.log(objFisc);
+
+            console.log(this.myReactTable.current);
+
+            this.setState({ loading: true });
+
+            ApiService.getFiscalizacoes(objFisc).then(resposta => this.setState({ loading: false, dados: resposta }));
         } catch (erro) {
+            this.setState({ loading: false });
+
             throw erro;
         }
     }
 
     limparInput() {
         this.setState({
-            id: '0',
-            contrato: '0',
-            medicao: '0',
+            id: '',
+            contrato: '',
+            medicao: '',
             medicaoSit: '1',
-            tipoFisc: '0',
+            tipoFisc: '',
             numSS: '',
-            dataHora: '',
-            conformidade: '0',
+            dataInicio: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataFim: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            conformidade: '',
             descricao: '',
             mensagemEstilo: 'danger',
+            loading: false,
 
             vsContrato: null,
             vsMedicao: null,
@@ -317,19 +368,44 @@ class FormularioPesquisa extends Component {
                                 <Button bsStyle="success"
                                     style={{ width: 100 }}
                                     onClick={this.pesquisar}>
-                                    <Glyphicon glyph="success" /> Pesquisar
+                                    <Glyphicon glyph="search" /> Pesquisar
+                                </Button>
+                                <Button bsStyle="primary"
+                                    style={{ width: 100 }}
+                                    onClick={() => { console.log(this.state.dados); }}
+                                    disabled={this.state.dados.length === 0}>
+                                    <Glyphicon glyph="export" /> CSV
+                                </Button>
+                                <Button bsStyle="danger"
+                                    style={{ width: 100 }}
+                                    onClick={() => { }}
+                                    disabled={this.state.dados.length === 0}>
+                                    <Glyphicon glyph="export" /> PDF
                                 </Button>
                             </ButtonToolbar>
                         </Col>
                     </Row>
+                    <br />
                     <Row className="show-grid">
-                        <ReactTable
-                            data={this.state.dados}
-                            columns={this.getTableColumns}
-                            defaultPageSize={10}
-                            loading={this.state.loading}
-                            filterable={true}
-                        />
+                        <Col xs={12} sm={12} md={12} lg={12}>
+                            <ReactTable
+                                ref={this.myReactTable}
+                                data={this.state.dados}
+                                columns={this.getTableColumns()}
+                                defaultPageSize={10}
+                                loading={this.state.loading}
+                                filterable={true}
+                                previousTex={this.previousText}
+                                nextText={this.nextText}
+                                loadingText={this.loadingText}
+                                noDataText={this.noDataText}
+                                pageText={this.pageText}
+                                ofText={this.ofText}
+                                rowsText={this.rowsText}
+                                pageJumpText={this.pageJumpText}
+                                rowsSelectorText={this.rowsSelectorText}
+                            />
+                        </Col>
                     </Row>
                 </Form>
             </Grid >
