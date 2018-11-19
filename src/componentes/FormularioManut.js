@@ -6,14 +6,13 @@ import moment from 'moment-timezone';
 import Mensagem from './Mensagem';
 import SelectCustomizado from './SelectCustomizado';
 import ApiService from './ApiService';
+import HttpStatus from 'http-status-codes';
 
 //Alteração somente se a medião estiver aberta = 0
 
 class FormularioManut extends Component {
     constructor(props) {
         super(props);
-
-        console.log(props.match.params.id || '0');
 
         this.state = {
             id: '',
@@ -41,6 +40,8 @@ class FormularioManut extends Component {
             tiposFisc: [],
             mensagens: []
         }
+
+        this.tempo_msg = 5000;
 
         this.onInputChange = this.onInputChange.bind(this);
         this.desabilitarInput = this.desabilitarInput.bind(this);
@@ -91,11 +92,11 @@ class FormularioManut extends Component {
     }
 
     desabilitarMedicao() {
-        return this.state.contrato === '0' || this.state.medicoes.length === 0;
+        return this.state.contrato === '' || this.state.medicoes.length === 0;
     }
 
     desabilitarExcluir() {
-        return this.state.medicaoSit === '1' || this.state.id === '0';
+        return this.state.medicaoSit === '1' || this.state.id === '';
     }
 
     validarForm() {
@@ -245,16 +246,7 @@ class FormularioManut extends Component {
                 'conformidade': this.state.conformidade
             }
 
-            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_SALVAR, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(objFisc)
-            });
-
-            const { sucesso, erro, alerta } = await rawResponse.json();
+            const { sucesso, erro } = await ApiService.salvarFiscalizacao(objFisc);
 
             if (sucesso) {
                 mensagemEstilo = 'success';
@@ -264,10 +256,6 @@ class FormularioManut extends Component {
                 mensagemEstilo = 'danger';
 
                 mensagens.push(erro);
-            } else if (alerta) {
-                mensagemEstilo = 'warning';
-
-                mensagens.push(alerta);
             }
 
             this.setState({
@@ -278,10 +266,56 @@ class FormularioManut extends Component {
                     this.setState({
                         mensagens: [],
                         mensagemEstilo: 'danger',
-                        id: '0'
+                        id: ''
                     });
-                }, 5000);
+                }, this.tempo_msg);
             });
+        } catch (erro) {
+            throw erro;
+        }
+    }
+
+    async pesquisarPorId(id) {
+        try {
+            const {
+                sucesso,
+                erro,
+                httpCod
+            } = await ApiService.getFiscalizacaoPorId(id);
+
+            console.log("sucesso", sucesso);
+            console.log("erro", erro);
+            console.log("httpCod", httpCod);
+
+            if (httpCod === HttpStatus.OK) {
+                const {
+                    envioContratos: { id: contrato },
+                    envioMedicaoContrato: { id: medicao },
+                    envioMedicaoContrato: { situacao: medicaoSit },
+                    envioTiposFiscalizacao: { id: tipoFisc },
+                    id,
+                    sS: numSS,
+                    dtExecucao: dataHora,
+                    conformidade,
+                    ativoExcluido,
+                    descricao
+                } = sucesso;
+
+                // id: '',
+                // contrato: '',
+                // medicao: '',
+                // medicaoSit: '1',
+                // tipoFisc: '',
+                // numSS: '',
+                // dataHora: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY HH:mm'),
+                // conformidade: '',
+                // descricao: '',
+                // mensagemEstilo: 'danger',
+                // ativoExcluido: 'A',
+
+            } else if (httpCod === HttpStatus.INTERNAL_SERVER_ERROR) {
+
+            }
         } catch (erro) {
             throw erro;
         }
@@ -290,20 +324,55 @@ class FormularioManut extends Component {
     async pesquisar() {
         try {
             const objFisc = {
-                'idMedicao': this.state.medicao,
-                'idTpFiscalizacao': this.state.tipoFisc,
-                'sS': this.state.numSS,
-                'idFiscalizacoesSs': null
+                'idMedicao': this.state.medicao ? this.state.medicao : null,
+                'idTpFiscalizacao': this.state.tipoFisc ? this.state.tipoFisc : null,
+                'sS': this.state.numSS ? this.state.numSS : null
             }
 
-            const { 
-                id, 
-                erro, 
-                dtExecucao, 
-                conformidade, 
-                descricao, 
-                ativoExcluido 
-            } =  await ApiService.getFiscalizacao(objFisc);
+            console.log(objFisc);
+
+            const isEmpty = Object.values(objFisc).every(x => (x === null || x === ''));
+
+            if (isEmpty) return;
+
+            const {
+                sucesso,
+                erro
+            } = await ApiService.getFiscalizacao(objFisc);
+
+            let mensagens = [];
+
+            let mensagemEstilo = 'danger';
+
+            //204 NO CONTENT
+            if (!sucesso && !erro) {
+                mensagemEstilo = 'warning';
+
+                mensagens.push("Não foi encontrado nenhum registros com os parâmetros informados!");
+
+                this.setState({
+                    mensagens,
+                    mensagemEstilo
+                }, () => {
+                    setTimeout(() => {
+                        this.setState({
+                            mensagens: [],
+                            mensagemEstilo: 'danger',
+                            id: ''
+                        });
+                    }, this.tempo_msg);
+                });
+
+                return;
+            }
+
+            const {
+                id,
+                dtExecucao,
+                conformidade,
+                descricao,
+                ativoExcluido
+            } = sucesso;
 
             if (erro || ativoExcluido === 'E') {
                 let mensagens = [];
@@ -320,10 +389,12 @@ class FormularioManut extends Component {
                         this.setState({
                             mensagens: [],
                             mensagemEstilo: 'danger',
-                            id: '0'
+                            id: ''
                         });
-                    }, 5000);
+                    }, this.tempo_msg);
                 });
+
+                return;
             }
 
             if (id) {
@@ -345,16 +416,7 @@ class FormularioManut extends Component {
                 'idFiscalizacoesSs': this.state.id
             }
 
-            const rawResponse = await fetch(process.env.REACT_APP_API_FISC_EXCLUIR, {
-                method: 'DELETE',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(objFisc)
-            });
-
-            const { sucesso, erro, alerta } = await rawResponse.json();
+            const { sucesso, erro } = await ApiService.excluirFiscalizacao(objFisc);
 
             let mensagens = [];
 
@@ -363,15 +425,11 @@ class FormularioManut extends Component {
             if (sucesso) {
                 mensagemEstilo = 'success';
 
-                mensagens.push(sucesso);
+                mensagens.push("Fiscalização excluída com sucesso!");
             } else if (erro) {
                 mensagemEstilo = 'danger';
 
                 mensagens.push(erro);
-            } else if (alerta) {
-                mensagemEstilo = 'warning';
-
-                mensagens.push(alerta);
             }
 
             this.setState({
@@ -382,11 +440,11 @@ class FormularioManut extends Component {
                     this.setState({
                         mensagens: [],
                         mensagemEstilo: 'danger',
-                        id: '0'
+                        id: ''
                     }, () => {
                         if (sucesso) this.limparInput();
                     });
-                }, 5000);
+                }, this.tempo_msg);
             });
         } catch (erro) {
             throw erro;
@@ -400,10 +458,16 @@ class FormularioManut extends Component {
 
         PubSub.subscribe('contrato-change', (topico, resposta) => {
             //Limpar o select quando escolher um contrato sem medições
-            this.setState({ medicao: '0', medicaoSit: '1' });
+            this.setState({ medicao: '', medicaoSit: '1' });
 
             ApiService.getMedicoes(resposta).then(dados => this.setState({ medicoes: dados }));
         });
+
+        const id = parseInt(this.props.match.params.id);
+
+        console.log(id);
+
+        this.pesquisarPorId(id);
     }
 
     render() {

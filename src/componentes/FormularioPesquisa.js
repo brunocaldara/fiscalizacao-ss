@@ -134,6 +134,15 @@ class FormularioPesquisa extends Component {
         vsDataInicio = null;
         vsDataFim = null;
 
+        if (this.state.contrato === '' ||
+            this.state.medicao === '' ||
+            this.state.tipoFisc === '' ||
+            this.state.conformidade === '')  {
+            mensagens.push('Informe algum parâmetro de busca!');
+
+            mensagemEstilo = 'danger';
+        }
+
         const regex = new RegExp(/\d{2}\/\d{2}\-\d{6}\-\d{2}/gm);
 
         if (this.state.numSS === '' || !regex.test(this.state.numSS)) {
@@ -189,6 +198,8 @@ class FormularioPesquisa extends Component {
 
     async pesquisar() {
         try {
+            if (!this.validarForm()) return;
+
             const objFisc = {
                 "cdContrato": this.state.contrato ? this.state.contrato : null,
                 "idMedicao": this.state.medicao ? this.state.medicao : null,
