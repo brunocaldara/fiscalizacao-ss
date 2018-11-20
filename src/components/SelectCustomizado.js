@@ -17,7 +17,7 @@ class SelectCustomizado extends Component {
                     placeholder={this.props.placeholder}
                     disabled={this.props.disabled}
                     onChange={this.props.onChange}>
-                    <OptionCustomizado key={0} id={0} desc="Selecione um valor..." />
+                    <OptionCustomizado key={'0'} id={'0'} desc="Selecione um valor..." />
                     {
                         this.props.items.map((item) => {
                             return <OptionCustomizado key={item.id} id={item.id} desc={item.desc} situacao={item.situacao} />

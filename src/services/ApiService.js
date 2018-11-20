@@ -92,7 +92,11 @@ export default class ApiService {
 
             const httpCod = rawResponse.status;
 
-            return await rawResponse.json();
+            if (rawResponse.status === HttpStatus.NO_CONTENT) return ({ sucesso: undefined, erro: undefined, httpCod });
+
+            if (rawResponse.status === HttpStatus.OK) return await rawResponse.json().then(sucesso => ({ sucesso, httpCod }));
+
+            return await rawResponse.json().then(erro => ({ erro, httpCod }));
         } catch (erro) {
             throw Error('Get Fiscalizações: ' + erro);
         }
@@ -135,8 +139,6 @@ export default class ApiService {
             const httpCod = rawResponse.status;
 
             if (rawResponse.status === HttpStatus.NO_CONTENT) return ({ sucesso: undefined, erro: undefined, httpCod });
-
-            if (rawResponse.status === HttpStatus.OK) return await rawResponse.json().then(sucesso => ({ sucesso, httpCod }));
 
             return await rawResponse.json().then(erro => ({ erro, httpCod }));
         } catch (erro) {
