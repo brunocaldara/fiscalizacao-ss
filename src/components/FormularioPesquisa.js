@@ -19,7 +19,10 @@ import SelectCustomizado from './SelectCustomizado';
 import ApiService from '../services/ApiService';
 import ReactTable from "react-table";
 import HttpStatus from 'http-status-codes';
+import RouteService from '../services/RouteService';
 import 'react-table/react-table.css';
+
+//https://stackoverflow.com/questions/48120858/access-filtered-data-in-reacttable
 
 class FormularioPesquisa extends Component {
     constructor(props) {
@@ -32,8 +35,8 @@ class FormularioPesquisa extends Component {
             medicaoSit: '1',
             tipoFisc: '',
             numSS: '',
-            dataInicio: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
-            dataFim: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataInicio: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataFim: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
             conformidade: '',
             mensagemEstilo: 'danger',
             loading: false,
@@ -74,7 +77,8 @@ class FormularioPesquisa extends Component {
                 accessor: 'id',
                 id: 'id',
                 sortable: true,
-                filterable: true
+                filterable: true,
+                width: 100
             },
             {
                 Header: 'Contrato',
@@ -88,7 +92,8 @@ class FormularioPesquisa extends Component {
                 accessor: f => f.envioMedicaoContrato.desc,
                 id: 'medicao',
                 sortable: true,
-                filterable: true
+                filterable: true,
+                width: 150
             },
             {
                 Header: 'Tipo Fisc.',
@@ -102,21 +107,24 @@ class FormularioPesquisa extends Component {
                 accessor: 'sS',
                 id: 'sS',
                 sortable: true,
-                filterable: true
+                filterable: true,
+                width: 130
             },
             {
                 Header: 'Data Exec',
                 accessor: 'dtExecucao',
                 id: 'dtExecucao',
                 sortable: true,
-                filterable: true
+                filterable: true,
+                width: 130
             },
             {
                 Header: 'Conformidade',
                 accessor: 'descConformidade',
                 id: 'descConformidade',
                 sortable: true,
-                filterable: true
+                filterable: true,
+                width: 120
             },
             {
                 Header: 'Acão',
@@ -124,15 +132,23 @@ class FormularioPesquisa extends Component {
                 id: 'acao',
                 sortable: false,
                 filterable: false,
+                width: 60,
                 Cell: row => (
-                    <Button bsStyle="success"
-                        style={{ width: 100 }}
-                        onClick={() => { console.log(row.original); }} >
-                        <Glyphicon glyph="search" /> Pesquisar
+                    <Button bsStyle={row.original.ativoExcluido === 'E' ||
+                        row.original.envioMedicaoContrato.situacao.toString() === '1' ? 'warning' : 'info'}
+                        onClick={() => { this.redirecionarPagina(row.original.id); }} >
+                        <Glyphicon glyph={row.original.ativoExcluido === 'E' ||
+                            row.original.envioMedicaoContrato.situacao.toString() === '1' ? 'floppy-remove' : 'floppy-saved'} />
                     </Button >
                 )
             }
         ]);
+    }
+
+    redirecionarPagina(id) {
+        //this.props.history.push(`/${id}`);
+        const win = window.open(`${RouteService.PUBLIC_PATH}/${id}`, '_blank');
+        win.focus();
     }
 
     setMensagem(mensagens, mensagemEstilo, callbackFunction) {
@@ -171,7 +187,7 @@ class FormularioPesquisa extends Component {
             this.state.tipoFisc === '' && this.state.conformidade === '' &&
             this.state.numSS === '' && this.state.dataInicio === '' &&
             this.state.dataFim === '') {
-            this.setMensagem(['Informe algum parâmetro de busca!'], 'danger');
+            this.setMensagem(['Informe algum parâmetro de busca!'], 'warning');
 
             return false;
         }
@@ -186,34 +202,44 @@ class FormularioPesquisa extends Component {
             vsNumSS = 'error';
         }
 
-        const dataInicio = moment(this.state.dataInicio, 'DD/MM/YYYY', true);
+        let dataInicio = undefined;
 
-        if (!dataInicio.isValid()) {
-            mensagens.push('Data inicial inválida!');
+        if (this.state.dataInicio) {
+            dataInicio = moment(this.state.dataInicio, 'DD/MM/YYYY', true);
 
-            mensagemEstilo = 'danger';
+            if (!dataInicio.isValid()) {
+                mensagens.push('Data inicial inválida!');
 
-            vsDataInicio = 'error';
+                mensagemEstilo = 'danger';
+
+                vsDataInicio = 'error';
+            }
         }
 
-        const dataFim = moment(this.state.dataFim, 'DD/MM/YYYY', true);
+        let dataFim = undefined;
 
-        if (!dataFim.isValid()) {
-            mensagens.push('Data final inválida!');
+        if (this.state.dataFim) {
+            dataFim = moment(this.state.dataFim, 'DD/MM/YYYY', true);
 
-            mensagemEstilo = 'danger';
+            if (!dataFim.isValid()) {
+                mensagens.push('Data final inválida!');
 
-            vsDataFim = 'error';
+                mensagemEstilo = 'danger';
+
+                vsDataFim = 'error';
+            }
         }
 
-        if (dataInicio.isAfter(dataFim)) {
-            mensagens.push('Período inválido!');
+        if (this.state.dataInicio && this.state.dataFim) {
+            if (dataInicio.isAfter(dataFim)) {
+                mensagens.push('Período inválido!');
 
-            mensagemEstilo = 'danger';
+                mensagemEstilo = 'danger';
 
-            vsDataInicio = 'error';
+                vsDataInicio = 'error';
 
-            vsDataFim = 'error';
+                vsDataFim = 'error';
+            }
         }
 
         this.setState({
@@ -233,17 +259,23 @@ class FormularioPesquisa extends Component {
         try {
             if (!this.validarForm()) return;
 
+            const contrato = this.state.contrato.toString() === '0' ? null : this.state.contrato;
+
+            const medicao = this.state.medicao.toString() === '0' ? null : this.state.medicao;
+
+            const tipoFisc = this.state.tipoFisc.toString() === '0' ? null : this.state.tipoFisc;
+
+            const conformidade = this.state.conformidade.toString() === '0' ? null : this.state.conformidade;
+
             const objFisc = {
-                "cdContrato": this.state.contrato ? this.state.contrato : null,
-                "idMedicao": this.state.medicao ? this.state.medicao : null,
-                "idTpFiscalizacao": this.state.tipoFisc ? this.state.tipoFisc : null,
+                "cdContrato": contrato,
+                "idMedicao": medicao,
+                "idTpFiscalizacao": tipoFisc,
                 "sS": this.state.numSS ? this.state.numSS : null,
                 "dataInicioExecucao": this.state.dataInicio ? this.state.dataInicio : null,
                 "dataFimExecucao": this.state.dataFim ? this.state.dataFim : null,
-                "conformidade": this.state.conformidade ? this.state.conformidade : null
+                "conformidade": conformidade
             }
-
-            console.log('objFisc', objFisc);
 
             this.setState({ loading: true });
 
@@ -256,11 +288,13 @@ class FormularioPesquisa extends Component {
             this.setState({ loading: false });
 
             if (httpCod === HttpStatus.OK) {
+                this.setState({ dados: sucesso });
+            } else {
+                const mensagem = httpCod === HttpStatus.NO_CONTENT ? ['Nenhum registro encontrado com os parâmetros informados!'] : [erro];
+                const estilo = httpCod === HttpStatus.NO_CONTENT ? 'warning' : 'danger';
 
-                this.setState({
-                    dados: sucesso
-                });
-            } else this.setMensagem([erro], 'danger');
+                this.setMensagem([mensagem], estilo);
+            }
         } catch (erro) {
             this.setState({ loading: false });
 
@@ -276,8 +310,8 @@ class FormularioPesquisa extends Component {
             medicaoSit: '1',
             tipoFisc: '',
             numSS: '',
-            dataInicio: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
-            dataFim: moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataInicio: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
+            dataFim: '', //moment().tz('America/Sao_Paulo').format('DD/MM/YYYY'),
             conformidade: '',
             descricao: '',
             mensagemEstilo: 'danger',
@@ -299,6 +333,16 @@ class FormularioPesquisa extends Component {
             dados: []
         });
     }
+
+    filterCaseInsensitive = (filter, row) => {
+        const id = filter.pivotId || filter.id;
+        return (
+            row[id] !== undefined ?
+                String(row[id].toLowerCase()).startsWith(filter.value.toLowerCase())
+                :
+                true
+        );
+    };
 
     onInputChange = (e) => {
         const targetId = e.target.id;
@@ -429,15 +473,15 @@ class FormularioPesquisa extends Component {
                                         <Glyphicon glyph="search" /> Pesquisar
                                 </Button>
                                     <Button bsStyle="primary"
-                                        style={{ width: 100 }}
+                                        style={{ width: 100, display: 'none' }}
                                         onClick={() => { console.log(this.state.dados); }}
-                                        disabled={this.state.dados.length === 0}>
+                                        disabled={true}>
                                         <Glyphicon glyph="export" /> CSV
                                 </Button>
                                     <Button bsStyle="danger"
-                                        style={{ width: 100 }}
+                                        style={{ width: 100, display: 'none' }}
                                         onClick={() => { }}
-                                        disabled={this.state.dados.length === 0}>
+                                        disabled={true}>
                                         <Glyphicon glyph="export" /> PDF
                                 </Button>
                                 </ButtonToolbar>
@@ -447,9 +491,11 @@ class FormularioPesquisa extends Component {
                         <Row className="show-grid">
                             <Col xs={12} sm={12} md={12} lg={12}>
                                 <ReactTable
+                                    style={{marginBottom: 10}}
                                     ref={this.myReactTable}
                                     data={this.state.dados}
                                     columns={this.getTableColumns()}
+                                    defaultFilterMethod={this.filterCaseInsensitive}
                                     defaultPageSize={10}
                                     loading={this.state.loading}
                                     filterable={true}

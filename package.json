@@ -2,6 +2,10 @@
   "name": "fiscalizacao-ss",
   "version": "0.1.0",
   "private": true,
+  "//": {
+    "homepage": "Necessário para não quebrar os arquivos dentro da pasta static quando gera o build"
+  },
+  "homepage": ".", 
   "dependencies": {
     "http-status-codes": "^1.3.0",
     "moment": "^2.22.2",

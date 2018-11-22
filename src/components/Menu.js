@@ -2,13 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import FormularioManut from "./FormularioManut";
 import FormularioPesquisa from "./FormularioPesquisa";
+import RouteService from '../services/RouteService';
 
 const Menu = () => {
     return (
-        <Router>
+        <Router basename={RouteService.PUBLIC_PATH}>
             <Switch>
-                <Route path="/pesquisar" component={FormularioPesquisa} />
-                <Route exact path="/:id?" component={FormularioManut} />
+                <Route path={RouteService.SEARCH} component={FormularioPesquisa} />
+                <Route exact path={RouteService.HOME} component={FormularioManut} />
                 <Route path="*" render={() => <div>Pagina 404</div>} />
             </Switch>
         </Router>

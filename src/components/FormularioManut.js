@@ -559,7 +559,7 @@ class FormularioManut extends Component {
                                         value={this.state.descricao}
                                         placeholder="Informe a descrição..."
                                         rows={6}
-                                        maxLength={50}
+                                        maxLength={8000}
                                         disabled={this.desabilitarInput()}
                                         onChange={this.onInputChange}>
                                     </FormControl>
